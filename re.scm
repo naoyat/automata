@@ -1,5 +1,11 @@
 (use srfi-1) ;; cons* -> Gauche の組み込み list* でも可
 
+(define (uniq ls . args)
+  (let* ([ht-type (if (null? args) 'eq? (car args))]
+         [ht (make-hash-table ht-type)])
+    (for-each (cut hash-table-put! ht <> #t) ls)
+    (hash-table-keys ht)))
+
 (define *ullman* #f) ;; Ullman先生方式なら#t
 (define *verbose* #f)
 
@@ -198,12 +204,6 @@
                                  (append-map eps-trans states))
           (for-each (cut hash-table-put! ht <> #t) new-states)
           (loop new-states)))))
-
-(define (uniq ls . args)
-  (let* ([ht-type (if (null? args) 'eq? (car args))]
-         [ht (make-hash-table ht-type)])
-    (for-each (cut hash-table-put! ht <> #t) ls)
-    (hash-table-keys ht)))
 
 (define (CLs fa states)
   (uniq (append-map (cut CL fa <>) states)))
