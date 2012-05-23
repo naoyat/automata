@@ -354,14 +354,13 @@
                 [else
                  (loop (cdr cs) (cons (Single (car cs)) concat) union)] )))))
 
-(define (FA->Table fa)
+(define (NFA->Table fa)
   (define (trans-cmp a b)
     (cond [(equal? a b) #f]
           [(eq? (car a) (car b)) (< (cdr a) (cdr b))]
           [(eq? 'eps (car a)) #t]
           [(eq? 'eps (car b)) #f]
           [else (char<? (car a) (car b))]))
-
   (let* ([states (fa-states fa)]
          [start (fa-start-state fa)]
          [finals (fa-final-states fa)]
@@ -378,3 +377,17 @@
                    (hash-table-map ht cons))))
          states)))
 
+(define (DFA->Table fa)
+  (let ([finals (fa-final-states fa)]
+        [trans-table (make-hash-table 'eq?)])
+    (dolist (tr (fa-transitions fa))
+      (let* ([st1 (trans-state1 tr)]
+             [in (trans-input tr)]
+             [st2 (trans-state2 tr)]
+             [ls (hash-table-get trans-table st1 '())])
+        (hash-table-put! trans-table st1 (cons (list in st2) ls))))
+    (sort (hash-table-map trans-table
+                          (lambda (st1 tr)
+                            (cons (cons st1 (if (memq st1 finals) '* '()))
+                                  (sort tr (lambda (a b) (char<? (car a) (car b)))))))
+          (lambda (a b) (< (caar a) (caar b))))))
