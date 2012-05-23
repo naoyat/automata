@@ -1,11 +1,41 @@
 (use srfi-1) ;; cons* -> Gauche の組み込み list* でも可
 (use gauche.array)
 
+;; 与えられたリスト ls の要素の重複を排除して返す
 (define (uniq ls . args)
-  (let* ([ht-type (if (null? args) 'eq? (car args))]
-         [ht (make-hash-table ht-type)])
+  (let* ([hash-type (if (null? args) 'eq? (car args))]
+         [ht (make-hash-table hash-type)])
     (for-each (cut hash-table-put! ht <> #t) ls)
     (hash-table-keys ht)))
+
+;; 与えられたリスト ls の全要素を持つハッシュテーブルを作る
+(define (list->set ls . args)
+  (let* ([hash-type (if (null? args) 'eq? (car args))]
+         [ht (make-hash-table hash-type)])
+    (for-each (cut hash-table-put! ht <> #t) ls)
+    ht))
+
+;; ある要素が予め与えられたリストに含まれるか否かを返す関数を作成
+(define (make-set-has?-proc ls . args)
+  (let1 ht (apply list->set ls args)
+    (lambda (elem) (hash-table-get ht elem #f))))
+
+;; 与えられたリスト ls の全要素に連番を振ったハッシュテーブルを作る
+(define (list->idmap ls . args)
+  (let* ([hash-type (if (null? args) 'eq? (car args))]
+         [ht (make-hash-table hash-type)])
+    (let loop ((id 0) (ls ls))
+      (if (null? ls) ht
+          (begin
+            (hash-table-put! ht (car ls) id)
+            (loop (+ id 1) (cdr ls)))))))
+
+;; ある要素に与えられた連番を返す。未知の要素に対しては #f を返す。
+(define (make-objectid-proc ls . args)
+  (let1 ht (apply list->idmap ls args)
+    (values
+     (lambda (elem) (hash-table-get ht elem #f))
+     (list->vector ls))))
 
 (define *ullman* #f) ;; Ullman先生方式なら#t
 (define *verbose* #f)
@@ -361,7 +391,8 @@
                  (loop (cdr cs) (cons (Single (car cs)) concat) union)] )))))
 
 (define (NFA->AList fa)
-  ;; (state (in1 st1) (in2 st2) ...)
+  ;; ( (state1 (in1 st1) (in2 st2) ...)
+  ;;   (state2 ...                 ...) )
   (define (trans-cmp a b)
     (cond [(equal? a b) #f]
           [(eq? (car a) (car b)) (< (cdr a) (cdr b))]
@@ -384,7 +415,8 @@
          states)))
 
 (define (DFA->AList fa)
-  ;; (state (in1 st1) (in2 st2) ...)
+  ;; ( (state1 (in1 st1) (in2 st2) ...)
+  ;;   (state2 ...                 ...) )
   (let ([finals (fa-final-states fa)]
         [trans-table (make-hash-table 'eq?)])
     (dolist (tr (fa-transitions fa))
@@ -405,11 +437,44 @@
       (array-set! ar (trans-state1 tr) (char->integer (trans-input tr)) (trans-state2 tr)))
     ar))
 
-(define (make-final?-proc fa)
-  (let1 finals-ht (make-hash-table 'eq?)
-    (dolist (st (fa-final-states fa)) (hash-table-put! finals-ht st #t))
-    (lambda (st) (hash-table-get finals-ht st #f))))
+(define (DFA->Array* fa)
+  (let* ([n-states (length (fa-states fa))]
+         [inputs (fa-inputs fa)]
+         [n-inputs (length inputs)]
+         [ar (make-array (shape 0 n-states 0 n-inputs) #f)])
+    (receive (idmap rev) (make-objectid-proc inputs)
+      (dolist (tr (fa-transitions fa))
+        (array-set! ar (trans-state1 tr) (idmap (trans-input tr)) (trans-state2 tr)))
+      (values ar idmap rev))))
 
+(define (DFA->Table fa)
+  (let* ([n-states (length (fa-states fa))]
+         [inputs (fa-inputs fa)]
+         [n-inputs (length inputs)]
+         [ar (make-vector n-states #f)]
+         [v (make-vector n-states #f)]
+         [pat-id 0]
+         [ht (make-hash-table 'equal?)])
+    (dotimes (i n-states) (vector-set! ar i (make-vector n-inputs #f)))
+    (receive (idmap rev) (make-objectid-proc inputs)
+      (dolist (tr (fa-transitions fa))
+        (vector-set! (vector-ref ar (trans-state1 tr)) (idmap (trans-input tr)) (trans-state2 tr)))
+      (dotimes (i n-states)
+        (let1 row (vector-ref ar i)
+          (let1 st (hash-table-get ht row #f)
+            (if st
+                (vector-set! v i st)
+                (begin
+                  (vector-set! v i pat-id)
+                  (hash-table-put! ht row pat-id)
+                  (inc! pat-id))))))
+      (let1 patterns (make-vector pat-id #f)
+        (hash-table-for-each ht (lambda (pat id) (vector-set! patterns id pat)))
+        (values patterns v idmap rev) ))))
+
+(define (make-final?-proc fa) (make-set-has?-proc (fa-final-states fa) 'eq?))
+
+;; 連想リストを用いたスキャナを作成
 (define (DFA->Scanner1 fa)
   (let ([table (DFA->AList fa)]
         [final? (make-final?-proc fa)])
@@ -430,7 +495,8 @@
                           'no-way))))
               'unknown-state))))))
 
-(define (DFA->Scanner dfa max-char-code)
+;; 配列を用いたスキャナを作成
+(define (DFA->Scanner2 dfa max-char-code)
   (let ([ar (DFA->Array dfa max-char-code)]
         [final? (make-final?-proc dfa)])
     (define (scanner str)
@@ -441,3 +507,19 @@
                 (loop (array-ref ar st (car cs)) (cdr cs)))
             'no-way)))
     scanner))
+
+;; コンパクト化した配列を用いたスキャナを作成
+(define (DFA->Scanner dfa)
+  (let1 final? (make-final?-proc dfa)
+    (receive (patterns table idmap rev) (DFA->Table dfa)
+      (define (scanner str)
+        (let loop ((st 0) (cs (string->list str)))
+          (let1 row (vector-ref patterns (vector-ref table st))
+            (if (null? cs)
+                (if (final? st) 'accepted 'not-accepted)
+                (let1 cid (idmap (car cs))
+                  (if cid
+                      (loop (vector-ref row cid) (cdr cs))
+                      'no-way))))))
+      scanner)))
+
