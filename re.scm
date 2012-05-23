@@ -379,12 +379,11 @@
                        [st2 (trans-state2 tr)])
                    (let1 ls (hash-table-get ht in '())
                      (hash-table-put! ht in (cons st2 ls))))))
-             (cons (cons state (if (memq state finals) '* '()))
-                   (hash-table-map ht cons))))
+             (cons state (hash-table-map ht cons))))
          states)))
 
 (define (DFA->Table fa)
-  ;; ((state . *-if-final) (in1 st1) (in2 st2) ...)
+  ;; (state (in1 st1) (in2 st2) ...)
   (let ([finals (fa-final-states fa)]
         [trans-table (make-hash-table 'eq?)])
     (dolist (tr (fa-transitions fa))
@@ -395,42 +394,49 @@
         (hash-table-put! trans-table st1 (cons (list in st2) ls))))
     (sort (hash-table-map trans-table
                           (lambda (st1 tr)
-                            (cons (cons st1 (if (memq st1 finals) '* '()))
-                                  (sort tr (lambda (a b) (char<? (car a) (car b)))))))
-          (lambda (a b) (< (caar a) (caar b))))))
+                            (cons st1 (sort tr (lambda (a b) (char<? (car a) (car b)))))))
+          (lambda (a b) (< (car a) (car b))))))
 
-(define (Table->Scanner tab)
-  (lambda (str)
-    (let loop ((st 0) (cs (string->list str)))
-      (let1 row (assoc st tab (lambda (key alistcar) (eq? key (car alistcar))))
-        (if row
-            (begin
-              (when *verbose* (format #t "cs=~a, st=~a, row=~a\n" cs st row))
-              (if (null? cs)
-                  (if (eq? '* (cdar row)) 'accepted 'not-accepted)
-                  (let* ([c (car cs)]
-                         [asf (assq c (cdr row))])
-                    (if asf
-                        (let1 to-st (second asf)
-                          (when *verbose* (format #t " =>~a ~a\n" c to-st))
-                          (loop to-st (cdr cs)))
-                        'no-way))))
-            'unknown-state)))))
-
-(define *charsize* 128)
-(define (DFA->Array fa)
+(define (DFA->Array fa max-char-code)
   (let* ([n-states (length (fa-states fa))]
-         [ar (make-array (shape 0 n-states 0 (+ *charsize* 1)) #f)])
-    (dolist (final (fa-final-states fa)) (array-set! ar final *charsize* #t))
+         [ar (make-array (shape 0 n-states 0 (+ max-char-code 1)) #f)])
     (dolist (tr (fa-transitions fa))
       (array-set! ar (trans-state1 tr) (char->integer (trans-input tr)) (trans-state2 tr)))
     ar))
 
-(define (Array->Scanner ar)
-  (lambda (str)
-    (let loop ((st 0) (cs (string->list str)))
-      (if (null? cs)
-          (if (array-ref ar st *charsize*) 'accepted 'not-accepted)
-          (let1 to-st (array-ref ar st (char->integer (car cs)))
-            (if to-st (loop to-st (cdr cs))
-                'no-way))))))
+(define (make-final?-proc fa)
+  (let1 finals-ht (make-hash-table 'eq?)
+    (dolist (st (fa-final-states fa)) (hash-table-put! finals-ht st #t))
+    (lambda (st) (hash-table-get finals-ht st #f))))
+
+(define (DFA->Scanner1 fa)
+  (let ([table (DFA->Table fa)]
+        [final? (make-final?-proc fa)])
+    (lambda (str)
+      (let loop ((st 0) (cs (string->list str)))
+        (let1 row (assoc st table)
+          (if row
+              (begin
+                (when *verbose* (format #t "cs=~a, st=~a, row=~a\n" cs st row))
+                (if (null? cs)
+                    (if (final? (car row)) 'accepted 'not-accepted)
+                    (let* ([c (car cs)]
+                           [asf (assq c (cdr row))])
+                      (if asf
+                          (let1 to-st (second asf)
+                            (when *verbose* (format #t " =>~a ~a\n" c to-st))
+                            (loop to-st (cdr cs)))
+                          'no-way))))
+              'unknown-state))))))
+
+(define (DFA->Scanner dfa max-char-code)
+  (let ([ar (DFA->Array dfa max-char-code)]
+        [final? (make-final?-proc dfa)])
+    (define (scanner str)
+      (let loop ((st 0) (cs (map char->integer (string->list str))))
+        (if st
+            (if (null? cs)
+                (if (final? st) 'accepted 'not-accepted)
+                (loop (array-ref ar st (car cs)) (cdr cs)))
+            'no-way)))
+    scanner))
