@@ -43,7 +43,12 @@
             (hash-table-put! state-id-ht state curr-id)
             curr-id)))
 
-    (state->id (fa-start-state fa)) ; start state を 0 にするための呼び出し
+    ;; start state を 0 に、final states を後ろの方の番号にする
+    (state->id (fa-start-state fa))
+    (let1 finals (fa-final-states fa)
+      (let1 others (lset-difference eq? (fa-states fa) finals)
+        (for-each state->id others))
+      (for-each state->id finals))
 
     (FA (state->id (fa-start-state fa))
         (map state->id (fa-final-states fa))

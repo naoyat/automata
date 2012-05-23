@@ -4,5 +4,5 @@
 	   (nfa (fa-renum (string->NFA s)))
 	   (dfa (fa-renum (NFA->DFA nfa))))
   (fa-draw dfa s "101dfa.gif")
-  (map print (FA->Table nfa))
-  (map print (FA->Table dfa)))
+  (map print (NFA->Table nfa))
+  (map print (DFA->Table dfa)))
