@@ -1,4 +1,5 @@
 (use srfi-1) ;; cons* -> Gauche の組み込み list* でも可
+(use gauche.array)
 
 (define (uniq ls . args)
   (let* ([ht-type (if (null? args) 'eq? (car args))]
@@ -383,6 +384,7 @@
          states)))
 
 (define (DFA->Table fa)
+  ;; ((state . *-if-final) (in1 st1) (in2 st2) ...)
   (let ([finals (fa-final-states fa)]
         [trans-table (make-hash-table 'eq?)])
     (dolist (tr (fa-transitions fa))
@@ -399,18 +401,36 @@
 
 (define (Table->Scanner tab)
   (lambda (str)
-	(let loop ((st 0) (cs (string->list str)))
-	  (let1 row (assoc st tab (lambda (key alistcar) (eq? key (car alistcar))))
-		(if row
-			(begin
-			  (when *verbose* (format #t "cs=~a, st=~a, row=~a\n" cs st row))
-			  (if (null? cs)
-				  (if (eq? '* (cdar row)) 'accepted 'not-accepted)
-				  (let* ([c (car cs)]
-						 [asf (assq c (cdr row))])
-					(if asf
-						(let1 to-st (second asf)
-						  (when *verbose* (format #t " =>~a ~a\n" c to-st))
-						  (loop to-st (cdr cs)))
-						'no-way))))
-			'unknown-state)))))
+    (let loop ((st 0) (cs (string->list str)))
+      (let1 row (assoc st tab (lambda (key alistcar) (eq? key (car alistcar))))
+        (if row
+            (begin
+              (when *verbose* (format #t "cs=~a, st=~a, row=~a\n" cs st row))
+              (if (null? cs)
+                  (if (eq? '* (cdar row)) 'accepted 'not-accepted)
+                  (let* ([c (car cs)]
+                         [asf (assq c (cdr row))])
+                    (if asf
+                        (let1 to-st (second asf)
+                          (when *verbose* (format #t " =>~a ~a\n" c to-st))
+                          (loop to-st (cdr cs)))
+                        'no-way))))
+            'unknown-state)))))
+
+(define *charsize* 128)
+(define (DFA->Array fa)
+  (let* ([n-states (length (fa-states fa))]
+         [ar (make-array (shape 0 n-states 0 (+ *charsize* 1)) #f)])
+    (dolist (final (fa-final-states fa)) (array-set! ar final *charsize* #t))
+    (dolist (tr (fa-transitions fa))
+      (array-set! ar (trans-state1 tr) (char->integer (trans-input tr)) (trans-state2 tr)))
+    ar))
+
+(define (Array->Scanner ar)
+  (lambda (str)
+    (let loop ((st 0) (cs (string->list str)))
+      (if (null? cs)
+          (if (array-ref ar st *charsize*) 'accepted 'not-accepted)
+          (let1 to-st (array-ref ar st (char->integer (car cs)))
+            (if to-st (loop to-st (cdr cs))
+                'no-way))))))
