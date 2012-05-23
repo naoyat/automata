@@ -360,7 +360,8 @@
                 [else
                  (loop (cdr cs) (cons (Single (car cs)) concat) union)] )))))
 
-(define (NFA->Table fa)
+(define (NFA->AList fa)
+  ;; (state (in1 st1) (in2 st2) ...)
   (define (trans-cmp a b)
     (cond [(equal? a b) #f]
           [(eq? (car a) (car b)) (< (cdr a) (cdr b))]
@@ -382,7 +383,7 @@
              (cons state (hash-table-map ht cons))))
          states)))
 
-(define (DFA->Table fa)
+(define (DFA->AList fa)
   ;; (state (in1 st1) (in2 st2) ...)
   (let ([finals (fa-final-states fa)]
         [trans-table (make-hash-table 'eq?)])
@@ -410,7 +411,7 @@
     (lambda (st) (hash-table-get finals-ht st #f))))
 
 (define (DFA->Scanner1 fa)
-  (let ([table (DFA->Table fa)]
+  (let ([table (DFA->AList fa)]
         [final? (make-final?-proc fa)])
     (lambda (str)
       (let loop ((st 0) (cs (string->list str)))
