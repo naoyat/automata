@@ -396,3 +396,21 @@
                             (cons (cons st1 (if (memq st1 finals) '* '()))
                                   (sort tr (lambda (a b) (char<? (car a) (car b)))))))
           (lambda (a b) (< (caar a) (caar b))))))
+
+(define (Table->Scanner tab)
+  (lambda (str)
+	(let loop ((st 0) (cs (string->list str)))
+	  (let1 row (assoc st tab (lambda (key alistcar) (eq? key (car alistcar))))
+		(if row
+			(begin
+			  (when *verbose* (format #t "cs=~a, st=~a, row=~a\n" cs st row))
+			  (if (null? cs)
+				  (if (eq? '* (cdar row)) 'accepted 'not-accepted)
+				  (let* ([c (car cs)]
+						 [asf (assq c (cdr row))])
+					(if asf
+						(let1 to-st (second asf)
+						  (when *verbose* (format #t " =>~a ~a\n" c to-st))
+						  (loop to-st (cdr cs)))
+						'no-way))))
+			'unknown-state)))))
