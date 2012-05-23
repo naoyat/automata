@@ -28,6 +28,33 @@
               (trans-prettyprint tr))
             (fa-transitions fa)))
 
+(define (fa-inputs fa)
+  (uniq (map trans-input (fa-transitions fa))))
+
+;; FA内のstateに番号を振る
+(define (fa-renum fa)
+  (let ([state-id 0]
+        [state-id-ht (make-hash-table 'eq?)])
+
+    (define (state->id state)
+      (or (hash-table-get state-id-ht state #f)
+          (let1 curr-id state-id
+            (inc! state-id)
+            (hash-table-put! state-id-ht state curr-id)
+            curr-id)))
+
+    (state->id (fa-start-state fa)) ; start state を 0 にするための呼び出し
+
+    (FA (state->id (fa-start-state fa))
+        (map state->id (fa-final-states fa))
+        (map state->id (fa-states fa))
+        (map (lambda (tr)
+               (Trans (state->id (trans-state1 tr))
+                      (trans-input tr)
+                      (state->id (trans-state2 tr))))
+             (fa-transitions fa)))))
+
+;; FAのグラフをdot形式に変換
 (define (fa->dot fa name)
   (format #t "digraph \"~a\" {\n" name)
   (format #t "  graph [ rankdir = LR ];\n")
@@ -35,17 +62,15 @@
   (format #t "  edge [ fontname = \"Courier\", color = black, weight = 1 ];\n")
   (format #t "  start [ shape = plaintext ];\n")
   (format #t "  start -> ~a;\n" (fa-start-state fa))
-  (let1 finals (fa-final-states fa)
-    (dolist (st finals)
-      (format #t "  ~a [ shape = circle, peripheries = 2 ];\n" st)))
+  (dolist (st (fa-final-states fa))
+    (format #t "  ~a [ shape = circle, peripheries = 2 ];\n" st))
   (dolist (tr (fa-transitions fa))
-    (let ([state1 (trans-state1 tr)]
-          [state2 (trans-state2 tr)]
-          [input (trans-input tr)])
+    (let1 input (trans-input tr)
       (when (eq? 'eps input) (set! input "ϵ"))
-      (format #t "  ~a -> ~a [ label = \"~a\" ];\n" state1 state2 input)))
+      (format #t "  ~a -> ~a [ label = \"~a\" ];\n" (trans-state1 tr) (trans-state2 tr) input)))
   (format #t "}\n"))
 
+;; FAのグラフをGraphvizで画像化
 (define (fa-draw fa label imgfile)
   (let* ([match (rxmatch #/([^.]+)\.(gif|png|ps|svg)/ imgfile)]
          [dotfile (format "~a.dot" (match 1))]
@@ -328,3 +353,28 @@
                  (loop (cdr cs) '() (cons (concatted) union))]
                 [else
                  (loop (cdr cs) (cons (Single (car cs)) concat) union)] )))))
+
+(define (FA->Table fa)
+  (define (trans-cmp a b)
+    (cond [(equal? a b) #f]
+          [(eq? (car a) (car b)) (< (cdr a) (cdr b))]
+          [(eq? 'eps (car a)) #t]
+          [(eq? 'eps (car b)) #f]
+          [else (char<? (car a) (car b))]))
+
+  (let* ([states (fa-states fa)]
+         [start (fa-start-state fa)]
+         [finals (fa-final-states fa)]
+         [trans-table (make-hash-table 'eq?)])
+    (map (lambda (state)
+           (let1 ht (make-hash-table 'eq?)
+             (dolist (tr (fa-transitions fa))
+               (when (eq? (trans-state1 tr) state)
+                 (let ([in (trans-input tr)]
+                       [st2 (trans-state2 tr)])
+                   (let1 ls (hash-table-get ht in '())
+                     (hash-table-put! ht in (cons st2 ls))))))
+             (cons (cons state (if (memq state finals) '* '()))
+                   (hash-table-map ht cons))))
+         states)))
+
