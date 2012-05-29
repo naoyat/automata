@@ -27,6 +27,7 @@
             (hash-table-put! ht (car ls) id)
             (loop (+ id 1) (cdr ls)))))))
 
+;; リストを delim を境にsplitする
 (define (split-list delim ls)
   (let loop ((ls ls) (curr '()) (splitted '()))
     (if (null? ls) (reverse! (cons (reverse! curr) splitted))
@@ -34,6 +35,7 @@
             (loop (cdr ls) '() (cons (reverse! curr) splitted))
             (loop (cdr ls) (cons (car ls) curr) splitted)))))
 
+;; リストの要素を sep を挟んで表示
 (define (print-with-sep sep ls)
   (let loop ((ls ls))
     (display (car ls))
