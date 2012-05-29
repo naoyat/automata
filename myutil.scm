@@ -26,3 +26,18 @@
           (begin
             (hash-table-put! ht (car ls) id)
             (loop (+ id 1) (cdr ls)))))))
+
+(define (split-list delim ls)
+  (let loop ((ls ls) (curr '()) (splitted '()))
+    (if (null? ls) (reverse! (cons (reverse! curr) splitted))
+        (if (eq? delim (car ls))
+            (loop (cdr ls) '() (cons (reverse! curr) splitted))
+            (loop (cdr ls) (cons (car ls) curr) splitted)))))
+
+(define (print-with-sep sep ls)
+  (let loop ((ls ls))
+    (display (car ls))
+    (unless (null? (cdr ls))
+      (display sep)
+      (loop (cdr ls)))))
+
