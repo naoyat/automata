@@ -46,6 +46,7 @@
 (define (CNF-production-lhs cprod) (car cprod))
 (define (CNF-production-rhs-list cprod) (cddr cprod))
 
+;; Note: CNFじゃなくても通るのでCNFというのは適切じゃない。CNFはCNFで専用の型を考えたい
 (define (CNF->CFG cnf)
   (define (CNF-production->production prod)
     (let ([lhs (car prod)]
