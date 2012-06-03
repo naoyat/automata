@@ -1,47 +1,42 @@
-(use gauche.test)
-(test-start "scanner")
-
-(use naoyat.automata.regular)
 (use naoyat.automata.fa)
+(use naoyat.automata.regular)
 
-;(define-macro (time* n proc)
-;  `(time (dotimes (i ,n) ,proc)))
-
-(define-macro (test-scanner scanner label)
-  `(begin
-     (test-section ,label)
-     (test* "10101" 'accepted (,scanner "10101"))
-     (test* "10100" 'not-accepted (,scanner "10100"))
-     (test* "00101" 'accepted (,scanner "00101"))
-     (test* "00100" 'not-accepted (,scanner "00100"))
-     (test* "1" 'accepted (,scanner "1"))
-     (test* "(empty string)" 'not-accepted (,scanner ""))
-     ))
-
+(set! *ullman* #f)
 
 (let* ((s "(1+0)*1")
-       (nfa (fa-renum (string->NFA s)))
-       (dfa (fa-renum (NFA->DFA nfa))))
-  ;(fa-draw dfa s "101dfa.gif")
-#|
-  (map print (NFA->AList nfa))
-  (map print (DFA->AList dfa))
-|#
-;  (time* 1000 (DFA->Scanner1 dfa))    ;  26 usec + 11
-;  (time* 1000 (DFA->Scanner2 dfa 50)) ; 111 usec + 47
-;  (time* 1000 (DFA->Scanner1 dfa))    ;  24 usec + 9
+       (nfa (string->NFA s))
+       (dfa (NFA->DFA nfa)))
+  (fa-draw nfa s "101.gif")
+  (fa-draw dfa s "101D.gif"))
 
-  (let1 scanner (DFA->Scanner1 dfa)
-    (test-scanner scanner "Scanner1 - Assoc List版"))
+(let* ((s "(10)*+0")
+       (nfa (string->NFA s))
+       (dfa (NFA->DFA nfa)))
+  (fa-draw nfa s "10-0.gif")
+  (fa-draw dfa s "10-0D.gif"))
 
-  (let1 scanner (DFA->Scanner2 dfa 50)
-    (test-scanner scanner "Scanner2 - Array版"))
+(fa-draw (string->NFA "abc") "abc" "abc.gif")
+(fa-draw (string->NFA "a*b") "a*b" "a-star-b.gif")
+(fa-draw (string->NFA "(a+b)(c+d)") "(a+b)(c+d)" "abcd.gif")
+(fa-draw (string->NFA "(a+b)(c+d)") "(a+b)(c+d)" "abcd.gif")
+(fa-draw (NFA->DFA (string->NFA "(a+b)(c+d)")) "DFA for (a+b)(c+d)" "abcd-dfa.gif")
+(fa-draw (string->NFA "(a+b)*c(d+e)") "(a+b)*c(d+e)" "abcde1.gif")
+(fa-draw (NFA->DFA (string->NFA "(ab+cd)*ef(gh+ij)")) "(ab+cd)*ef(gh+ij)" "abcde2.gif")
 
-  ;; (print (DFA->Array* dfa))
-  ;; コンパクト版
-  (let1 scanner (DFA->Scanner dfa)
-    (test-scanner scanner "Scanner - コンパクト版"))
+(fa-draw (regexp->NFA "abc") "abc" "abc.gif")
+(fa-draw (regexp->NFA "a*b") "a*b" "a-star-b.gif")
+(fa-draw (regexp->NFA "[ab][cd]") "[ab][cd]" "abcd.gif")
+(fa-draw (regexp->NFA "[a-z]?") "[a-z]?" "a-z.gif")
+(fa-draw (regexp->NFA "[ab]*c[de]") "[ab]*c[de]" "abcde1.gif")
+(fa-draw (NFA->DFA (regexp->NFA "(ab|cd)*ef(gh|ij)")) "(ab|cd)*ef(gh|ij)" "abcde2.gif")
 
-  )
+(set! *ullman* #t)
+(fa-draw (string->NFA "a*") "a*" "a-star-ullman.gif")
+(set! *ullman* #f)
+(fa-draw (string->NFA "a*") "a*" "a-star-aiken.gif")
 
-(test-end)
+(fa-draw (string->NFA "(a+b)*c") "(a+b)*c" "abc1.gif")
+(fa-draw (regexp->NFA "[ab]*c") "[ab]*c" "abc2.gif")
+
+(fa-draw (regexp->NFA "[ab][c-e]") "[ab][c-e]" "abc-e.gif")
+(fa-draw (NFA->DFA (regexp->NFA "[ab][c-e]")) "DFA for [ab][c-e]" "abc-e-dfa.gif")
