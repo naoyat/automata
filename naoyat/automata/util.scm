@@ -1,10 +1,10 @@
 (define-module naoyat.automata.util
   (export uniq
-		  list->set
-		  make-set-has?-proc
-		  list->idmap
-		  split-list
-		  print-with-sep))
+          list->set
+          make-set-has?-proc
+          list->idmap
+          split-list
+          print-with-sep))
 
 (select-module naoyat.automata.util)
 
@@ -52,4 +52,3 @@
     (unless (null? (cdr ls))
       (display sep)
       (loop (cdr ls)))))
-

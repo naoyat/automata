@@ -24,22 +24,16 @@
           fa-renum
           fa->dot
           fa-draw
-          fa-transitions-from-a-state ;?
-          fa-transitions-from-states ;?
-          fa-non-eps-inputs-from-a-state ;?
-          fa-non-eps-inputs-from-states ;?
 
-          CL ;?
-          CLs
-          
           NFA->DFA
 
           NFA->AList
           DFA->AList DFA->Array DFA->Array* DFA->Table
-          DFA->Scanner1 DFA->Scanner2 DFA->Scanner
-          
-          ))
+          DFA->Scanner1 DFA->Scanner2
+          DFA->Scanner))
+
 (select-module naoyat.automata.fa)
+
 
 (define *verbose* #f)
 

@@ -9,13 +9,13 @@
 
   (export *ullman*
 
-		  Single Concat Union
-		  Kleene* Kleene+ Kleene?
-		  char-range
+          Single Concat Union
+          Kleene* Kleene+ Kleene?
+          char-range
 
-		  regexp->NFA
-		  string->NFA
-		  ))
+          regexp->NFA
+          string->NFA
+          ))
 (select-module naoyat.automata.regular)
 
 
@@ -25,14 +25,14 @@
 (define (Single input)
   (let ([start (genstate)]
         [final (genstate)])
-	(make <FA>
-	  :start-state  start
-	  :final-states (list final)
-	  :states       (list start final)
-	  :transitions  (list (make <FA-transition>
-							:state1 start
-							:input  input
-							:state2 final)))))
+    (make <FA>
+      :start-state  start
+      :final-states (list final)
+      :states       (list start final)
+      :transitions  (list (make <FA-transition>
+                            :state1 start
+                            :input  input
+                            :state2 final)))))
 
 ;; concatenation (AB..)
 (define (Concat . faa)
@@ -44,16 +44,16 @@
                (rest (cdr faa)))
       (if (null? rest)
           (make <FA>
-			:start-state fa1-start
-			:final-states last-finals
-			:states states
-			:transitions transitions)
+            :start-state fa1-start
+            :final-states last-finals
+            :states states
+            :transitions transitions)
           (let* ([fa2 (car rest)]
                  [concat-trs (map (cut make <FA-transition>
-									   :state1 <>
-									   :input 'eps
-									   :state2 (start-state-of fa2))
-								  last-finals)])
+                                       :state1 <>
+                                       :input 'eps
+                                       :state2 (start-state-of fa2))
+                                  last-finals)])
             (loop (final-states-of fa2)
                   (append states (states-of fa2))
                   (append transitions concat-trs (transitions-of fa2))
@@ -68,21 +68,21 @@
           [transitions+
            (append-map (lambda (fa)
                          (let ([s-> (make <FA-transition>
-									  :state1 start
-									  :input 'eps
-									  :state2 (start-state-of fa))]
+                                      :state1 start
+                                      :input 'eps
+                                      :state2 (start-state-of fa))]
                                [->f* (map (cut make <FA-transition>
-											   :state1 <>
-											   :input 'eps
-											   :state2 final)
-										  (final-states-of fa))])
+                                               :state1 <>
+                                               :input 'eps
+                                               :state2 final)
+                                          (final-states-of fa))])
                            (append (list s->) (transitions-of fa) ->f*)))
                        faa)])
       (make <FA>
-		:start-state start
-		:final-states (list final)
-		:states states+
-		:transitions transitions+))))
+        :start-state start
+        :final-states (list final)
+        :states states+
+        :transitions transitions+))))
 
 (define (char-range from-char to-char)
   (let ([from (char->integer from-char)]
@@ -98,31 +98,31 @@
         [states (states-of a)]
         [transitions (transitions-of a)])
     (let ([start->final (make <FA-transition>
-						  :state1 start
-						  :input 'eps
-						  :state2 final)]
+                          :state1 start
+                          :input 'eps
+                          :state2 final)]
           [start->a-start (make <FA-transition>
-							:state1 start
-							:input 'eps
-							:state2 a-start)]
+                            :state1 start
+                            :input 'eps
+                            :state2 a-start)]
           [a-finals->final (map (cut make <FA-transition>
-									 :state1 <>
-									 :input 'eps
-									 :state2 final)
-								a-finals)]
+                                     :state1 <>
+                                     :input 'eps
+                                     :state2 final)
+                                a-finals)]
           [a-finals->a-start (map (cut make <FA-transition>
-									   :state1 <>
-									   :input 'eps
-									   :state2 (if *ullman* a-start start))
-								  a-finals)])
+                                       :state1 <>
+                                       :input 'eps
+                                       :state2 (if *ullman* a-start start))
+                                  a-finals)])
       (let ([states+ (cons* start final states)]
             [transitions+ (append (list start->final start->a-start)
                                   a-finals->final a-finals->a-start transitions)])
         (make <FA>
-		  :start-state start
-		  :final-states (list final)
-		  :states states+
-		  :transitions transitions+)))))
+          :start-state start
+          :final-states (list final)
+          :states states+
+          :transitions transitions+)))))
 
 ;; Kleene plus (A+)
 (define (Kleene+ a)
@@ -133,27 +133,27 @@
         [states (states-of a)]
         [transitions (transitions-of a)])
     (let ([start->a-start (make <FA-transition>
-							:state1 start
-							:input 'eps
-							:state2 a-start)]
+                            :state1 start
+                            :input 'eps
+                            :state2 a-start)]
           [a-finals->final (map (cut make <FA-transition>
-									 :state1 <>
-									 :input 'eps
-									 :state2 final)
-								a-finals)]
+                                     :state1 <>
+                                     :input 'eps
+                                     :state2 final)
+                                a-finals)]
           [a-finals->a-start (map (cut make <FA-transition>
-									   :state1 <>
-									   :input 'eps
-									   :state2 (if *ullman* a-start start))
-								  a-finals)])
+                                       :state1 <>
+                                       :input 'eps
+                                       :state2 (if *ullman* a-start start))
+                                  a-finals)])
       (let ([states+ (cons* start final states)]
             [transitions+ (append (list start->a-start)
                                   a-finals->final a-finals->a-start transitions)])
         (make <FA>
-		  :start-state start
-		  :final-states (list final)
-		  :states states+
-		  :transitions transitions+)))))
+          :start-state start
+          :final-states (list final)
+          :states states+
+          :transitions transitions+)))))
 
 ;; A?
 (define (Kleene? a)
@@ -164,26 +164,26 @@
         [states (states-of a)]
         [transitions (transitions-of a)])
     (let ([start->final (make <FA-transition>
-						  :state1 start
-						  :input 'eps
-						  :state2 final)]
+                          :state1 start
+                          :input 'eps
+                          :state2 final)]
           [start->a-start (make <FA-transition>
-							:state1 start
-							:input 'eps
-							:state2 a-start)]
+                            :state1 start
+                            :input 'eps
+                            :state2 a-start)]
           [a-finals->final (map (cut make <FA-transition>
-									 :state1 <>
-									 :input 'eps
-									 :state2 final)
-								a-finals)])
+                                     :state1 <>
+                                     :input 'eps
+                                     :state2 final)
+                                a-finals)])
       (let ([states+ (cons* start final states)]
             [transitions+ (append (list start->final start->a-start)
                                   a-finals->final transitions)])
         (make <FA>
-		  :start-state start
-		  :final-states (list final)
-		  :states states+
-		  :transitions transitions+)))))
+          :start-state start
+          :final-states (list final)
+          :states states+
+          :transitions transitions+)))))
 
 
 
