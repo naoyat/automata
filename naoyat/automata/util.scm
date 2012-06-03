@@ -1,3 +1,13 @@
+(define-module naoyat.automata.util
+  (export uniq
+		  list->set
+		  make-set-has?-proc
+		  list->idmap
+		  split-list
+		  print-with-sep))
+
+(select-module naoyat.automata.util)
+
 ;; 与えられたリスト ls の要素の重複を排除して返す
 (define (uniq ls . args)
   (let* ([hash-type (if (null? args) 'eq? (car args))]

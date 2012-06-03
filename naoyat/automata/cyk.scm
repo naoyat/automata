@@ -1,18 +1,28 @@
-(require "./CFG.scm")
+;;
+;; Cocke-Younger-Kasami algorithm
+;;
+(define-module naoyat.automata.cyk
+  (use srfi-1)
+  (use gauche.array)
+  (use util.combinations)
+  (use naoyat.automata.cfg)
+  (use naoyat.automata.production)
 
-(use gauche.array)
-(use util.combinations)
+  (export make-CYK-solver))
+
+(select-module naoyat.automata.cyk)
+
 
 ;; とりあえずrhsが2アイテムまでの文法のみ
-(define (make-CYK-solver cfg)
+(define (make-CYK-solver grammar)
   (let1 rl (make-hash-table 'equal?)
 
-    (dolist (prod (CFG-productions cfg))
-      (let ([lhs (CFG-production-lhs prod)]
-            [rhsl (CFG-production-rhs-list prod)])
-        (dolist (rhs rhsl)
-          (hash-table-put! rl rhs
-                           (cons lhs (hash-table-get rl rhs '()))))))
+    (dolist (prod (productions-of grammar))
+      (let ([head (head-of prod)]
+            [bodies (bodies-of prod)])
+        (dolist (body bodies)
+          (hash-table-put! rl body
+                           (cons head (hash-table-get rl body '()))))))
 
 ;   (hash-table-for-each rl (lambda (k v) (format #t "{ ~a ~a }\n" k v)))
 

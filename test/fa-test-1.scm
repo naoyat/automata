@@ -1,4 +1,10 @@
-(require "./re.scm")
+;(use gauche.test)
+;(test-start "scanner")
+
+(use naoyat.automata.fa)
+(use naoyat.automata.regular)
+
+;(require "./re.scm")
 ;;
 ;; sandbox
 ;;
@@ -23,8 +29,8 @@
 
 (define abc (Concat a b c))
 (define a+b+c (Union a b c))
-(fa-prettyprint abc "abc")
-(fa-prettyprint a+b+c "a+b+c")
+(fa-prettyprint abc); "abc")
+(fa-prettyprint a+b+c); "a+b+c")
 (fa-prettyprint (NFA->DFA a+b+c) "a+b+c")
 
 (fa-draw a* "a*" "a-star.gif")
