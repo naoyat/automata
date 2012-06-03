@@ -3,5 +3,14 @@ automata
 1. 正規表現とかオートマトンとか
 2. CYKアルゴリズムをとりあえず実装してみた
 
+モジュール構成
+  naoyat.automata.production  - production (like "A -> BC | d") classes
+  naoyat.automata.regular     - regular language
+  naoyat.automata.fa          - Finite Automaton
+  naoyat.automata.cfg         - context-free grammar
+  naoyat.automata.cyk         - CYK algorithm
+  naoyat.automata.util        - utility functions
+
+
 (c)2012 naoya_t
 
