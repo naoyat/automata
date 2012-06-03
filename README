@@ -1,12 +1,12 @@
 automata - 正規表現とかオートマトンとか文脈自由文法とか
 
 モジュール構成
-  naoyat.automata.production  - production (like "A -> BC | d") classes
-  naoyat.automata.regular     - regular language
-  naoyat.automata.fa          - Finite Automaton
-  naoyat.automata.cfg         - context-free grammar
-  naoyat.automata.cyk         - CYK algorithm
-  naoyat.automata.util        - utility functions
+  naoyat.automata.production  - Production (like "A -> BC | d") classes
+  naoyat.automata.regular     - Regular Language.
+  naoyat.automata.fa          - Finite Automaton.
+  naoyat.automata.cfg         - Context-Free Grammar. Chomsky Normal Form.
+  naoyat.automata.cyk         - CYK algorithm.
+  naoyat.automata.util        - Utility functions.
 
 (c)2012 naoya_t
 

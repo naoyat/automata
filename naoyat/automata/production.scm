@@ -1,4 +1,6 @@
 (define-module naoyat.automata.production
+  (use naoyat.automata.util)
+
   (export <production>
           head-of
           body-of
@@ -8,6 +10,8 @@
 
           write-object
           object-equal?
+
+          productions-inpo-equal?
 
           epsilon
           epsilon?
@@ -61,6 +65,25 @@
   (and (equal? (head-of a) (head-of b))
        (equal? (bodies-of a) (bodies-of b))))
 
+(define (var<? v1 v2)
+  (cond [(char? v1)
+		 (if (char? v2) (char<? v1 v2) #t)]
+		[(symbol? v1)
+		 (if (symbol? v2) (symbol<? v1 v2) #f)]
+		[else #f]))
+
+(define (productions-inpo-equal? p1 p2)
+  (let ([p1-ht (make-hash-table 'eq?)]
+		[p2-ht (make-hash-table 'eq?)])
+	(dolist (prod p1) (hash-table-put! p1-ht (head-of prod) (bodies-of prod)))
+	(dolist (prod p2) (hash-table-put! p2-ht (head-of prod) (bodies-of prod)))
+	(let ([nt1 (sort (hash-table-keys p1-ht) symbol<?)]
+		  [nt2 (sort (hash-table-keys p2-ht) symbol<?)])
+	  (and (equal? nt1 nt2)
+		   (every (^(head)
+					(equal? (sort (hash-table-get p1-ht head '()) var<?)
+							(sort (hash-table-get p2-ht head '()) var<?)))
+				  (hash-table-keys p1-ht))))))
 
 ;;
 ;; terminal / non-terminal

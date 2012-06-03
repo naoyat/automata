@@ -4,7 +4,8 @@
           make-set-has?-proc
           list->idmap
           split-list
-          print-with-sep))
+          print-with-sep
+          symbol<?))
 
 (select-module naoyat.automata.util)
 
@@ -52,3 +53,5 @@
     (unless (null? (cdr ls))
       (display sep)
       (loop (cdr ls)))))
+
+(define (symbol<? s1 s2) (string<? (symbol->string s1) (symbol->string s2)))

@@ -5,11 +5,13 @@
 (use naoyat.automata.cfg)
 (use naoyat.automata.cyk)
 
-(let* ([grammar (grammar->CFG '((S -> A B)
-                                (A -> B C / #\a)
-                                (B -> A C / #\b)
-                                (C -> #\a / #\b)))]
-       [cyk-solver (make-CYK-solver grammar)]
+(let* ([cfg (grammar->CFG '((S -> A B)
+							(A -> B C / #\a)
+							(B -> A C / #\b)
+							(C -> #\a / #\b)))]
+	   [cnf (CFG->CNF cfg)]
+	   ;;[_ (print cnf)]
+       [cyk-solver (make-CYK-solver cnf)]
        [w "ababa"]
        [cyk-table (cyk-solver w)])
   (test-section "CYK-table")
