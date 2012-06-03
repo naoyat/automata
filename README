@@ -1,7 +1,4 @@
-automata
-
-1. 正規表現とかオートマトンとか
-2. CYKアルゴリズムをとりあえず実装してみた
+automata - 正規表現とかオートマトンとか文脈自由文法とか
 
 モジュール構成
   naoyat.automata.production  - production (like "A -> BC | d") classes
@@ -10,7 +7,6 @@ automata
   naoyat.automata.cfg         - context-free grammar
   naoyat.automata.cyk         - CYK algorithm
   naoyat.automata.util        - utility functions
-
 
 (c)2012 naoya_t
 
