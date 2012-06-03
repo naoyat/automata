@@ -12,11 +12,11 @@
   (newline))
 
 (define (make-CFG start terminals non-terminals productions)
-  (list start terminals non-terminals productions))
-(define (CFG-start cfg) (first cfg))
-(define (CFG-terminals cfg) (second cfg))
-(define (CFG-non-terminals cfg) (third cfg))
-(define (CFG-productions cfg) (fourth cfg))
+  (list 'CFG start terminals non-terminals productions))
+(define (CFG-start cfg) (second cfg))
+(define (CFG-terminals cfg) (third cfg))
+(define (CFG-non-terminals cfg) (fourth cfg))
+(define (CFG-productions cfg) (fifth cfg))
 
 (define (make-CFG-from-productions productions)
   (let ([NT (make-hash-table 'eq?)]
