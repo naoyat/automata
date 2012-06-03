@@ -3,4 +3,4 @@
 all:
 
 check:
-	gosh -I. test/*.scm
+	for f in test/*.scm ; do gosh -I. $$f ; done
